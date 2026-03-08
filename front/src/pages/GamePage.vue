@@ -28,7 +28,16 @@ const handlePass = () => {
 <template>
   <div class="min-h-screen bg-green-800 flex flex-col justify-between p-4 overflow-hidden">
     <!-- Top Area: Opponents -->
-    <div class="flex justify-between items-start px-8">
+    <div class="flex justify-between items-start px-8 relative">
+      <!-- Auto-play Toggle Button -->
+      <button 
+        @click="gameStore.toggleAutoPlay()"
+        class="absolute -top-2 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full font-bold transition-all shadow-lg z-10"
+        :class="gameStore.isAutoPlay ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-blue-500 text-white hover:bg-blue-600'"
+      >
+        {{ gameStore.isAutoPlay ? '取消托管 (Active)' : '开启托管 (Auto-play)' }}
+      </button>
+
       <!-- Opponent 1 (Left) -->
       <div class="flex flex-col items-center">
         <div class="w-16 h-16 bg-gray-300 rounded-full mb-2 flex items-center justify-center text-xl font-bold">

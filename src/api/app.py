@@ -178,11 +178,7 @@ def trigger_ai(game_id: str):
     if game.is_over:
         return _convert_game_to_state(game, game_id)
         
-    # Check if current player is AI
-    if game.current_player == session.human_player_idx:
-        raise HTTPException(status_code=400, detail="It is human turn")
-        
-    # Predict
+    # Predict (Even for human if auto-play is requested)
     action = ai_service.predict(game, game.current_player)
     
     if action:

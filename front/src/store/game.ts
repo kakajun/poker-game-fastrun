@@ -24,8 +24,9 @@ function mapCard(c: CardModel): Card {
 }
 
 export const useGameStore = defineStore('game', {
-  state: (): GameState & { gameId: string | null } => ({
+  state: (): GameState & { gameId: string | null, isAutoPlay: boolean } => ({
     gameId: null,
+    isAutoPlay: false,
     status: 'lobby',
     players: [],
     currentPlayerIndex: -1,
@@ -93,21 +94,68 @@ export const useGameStore = defineStore('game', {
         };
       });
 
-      // 4. Auto-pass logic
-      // If it's human turn and the only legal action is PASS, then pass automatically
-      if (!backendState.is_over && backendState.current_player === 0) {
-        const isOnlyPass = backendState.legal_actions.length === 1 &&
-                           backendState.legal_actions[0].type === 'PASS';
+    // 4. Auto-pass logic
+    // If it's human turn and the only legal action is PASS, then pass automatically
+    if (!backendState.is_over && backendState.current_player === 0) {
+      const isOnlyPass = backendState.legal_actions.length === 1 &&
+                         backendState.legal_actions[0].type === 'PASS';
 
-        if (isOnlyPass) {
-          console.log("No legal moves available. Auto-passing...");
-          // Delay a bit for visual clarity
-          setTimeout(() => {
-            this.passTurn();
-          }, 1000);
-        }
+      if (isOnlyPass) {
+        console.log("No legal moves available. Auto-passing...");
+        // Delay a bit for visual clarity
+        setTimeout(() => {
+          this.passTurn();
+        }, 1000);
+      } else if (this.isAutoPlay) {
+        // Human is in AutoPlay mode
+        console.log("Auto-play mode active. AI deciding for human in 3s...");
+        setTimeout(async () => {
+          // Re-check if it's still my turn and auto-play is still on
+          if (this.currentPlayerIndex === 0 && this.isAutoPlay && !this.winnerId) {
+            try {
+              const newState = await gameApi.triggerAi(this.gameId!);
+              this.syncState(newState);
+
+              // If next is AI (bot), it will be handled by processAiTurn triggered inside syncState?
+              // No, syncState doesn't trigger bot AI automatically except in initGame.
+              // We need to ensure bots move after human auto-play.
+              if (this.currentPlayerIndex !== 0 && !this.winnerId) {
+                this.processAiTurn();
+              }
+            } catch (e) {
+              console.error("Auto-play AI failed", e);
+            }
+          }
+        }, 3000); // 3s delay as requested
       }
-    },
+    }
+  },
+
+  toggleAutoPlay() {
+    this.isAutoPlay = !this.isAutoPlay;
+    // If we just turned it on and it's our turn, trigger it
+    if (this.isAutoPlay && this.currentPlayerIndex === 0 && !this.winnerId) {
+      // Triggering syncState again to hit the logic above
+      // Or just call triggerAi directly?
+      // Re-running logic is safer.
+      const human = this.players[0];
+      if (human && human.isTurn) {
+          // We can't easily re-run syncState without data,
+          // so let's just wait for the next turn or trigger once here if needed.
+          // Actually, if we just turned it on, we should probably trigger the 3s timer.
+          console.log("Auto-play enabled during turn. Starting 3s timer...");
+          setTimeout(async () => {
+            if (this.currentPlayerIndex === 0 && this.isAutoPlay && !this.winnerId) {
+                const newState = await gameApi.triggerAi(this.gameId!);
+                this.syncState(newState);
+                if (this.currentPlayerIndex !== 0 && !this.winnerId) {
+                    this.processAiTurn();
+                }
+            }
+          }, 3000);
+      }
+    }
+  },
 
     async playCards(playerId: string, cards: Card[]) {
       if (!this.gameId) return;
