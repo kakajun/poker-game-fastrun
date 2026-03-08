@@ -43,34 +43,49 @@ graph TD
 
 ## 4. 开发计划 (Development Roadmap)
 
+### 4.0 阶段文档索引
+- 阶段 1：规则引擎实施方案（纯规则，无 AI）— [stage-1-engine.md](file:///f:/git/poker-game-fastrun/docs/stage-1-engine.md)
+- 阶段 2：AI 训练环境实施方案（Gym）— [stage-2-env.md](file:///f:/git/poker-game-fastrun/docs/stage-2-env.md)
+- 阶段 3：AI 模型训练实施方案 — [stage-3-training.md](file:///f:/git/poker-game-fastrun/docs/stage-3-training.md)
+- 阶段 4：API 服务封装实施方案 — [stage-4-api.md](file:///f:/git/poker-game-fastrun/docs/stage-4-api.md)
+- 阶段 5：测试、优化、上线实施方案 — [stage-5-release.md](file:///f:/git/poker-game-fastrun/docs/stage-5-release.md)
+- 阶段 6：前端界面设计与实现 — [stage-6-ui.md](file:///f:/git/poker-game-fastrun/docs/stage-6-frontend.md)
+
+
 ### 第一阶段：游戏核心引擎 (The Foundation)
 **目标**：实现一个只要给它指令，它就能按规则运行的"裁判"。
-*   [ ] 定义牌的数据结构（Card, Hand）。
-*   [ ] 实现牌型判断算法（单张、对子、顺子、炸弹等）。
-*   [ ] **关键点**：实现 `get_legal_actions(state)` 函数，根据当前桌面牌型，计算出玩家所有合法的出牌选择（包含"过"）。
-*   [ ] 实现游戏状态流转（发牌、出牌、结算、下一位）。
+*   [x] 定义牌的数据结构（Card, Hand）。
+*   [x] 实现牌型判断算法（单张、对子、顺子、炸弹等）。
+*   [x] **关键点**：实现 `get_legal_actions(state)` 函数，根据当前桌面牌型，计算出玩家所有合法的出牌选择（包含"过"）。
+*   [x] 实现游戏状态流转（发牌、出牌、结算、下一位）。
 
 ### 第二阶段：AI 环境搭建 (The Gym)
 **目标**：让 AI 能"玩"这个游戏。
-*   [ ] 封装 Gym Environment：实现 `reset()` (开始新游戏) 和 `step(action)` (执行动作并返回奖励)。
-*   [ ] 定义 **State (状态)**：
-    *   我的手牌（One-hot编码）
-    *   其他两家剩余牌数
-    *   当前桌面上最大的牌
-    *   历史出牌记录
-*   [ ] 定义 **Reward (奖励)**：
+*   [x] 封装 Gym Environment：实现 `reset()` (开始新游戏) 和 `step(action)` (执行动作并返回奖励)。
+*   [x] 定义 **State (状态)**：
+    *   核心特征：我的手牌（52维）、其他两家剩余牌数（2维）、当前桌面牌（52+10维）。
+*   [x] 定义 **Action (动作)**：
+    *   抽象动作空间 (Abstract Action Space)：Pass + Type_Len_Max (共252维)。
+    *   具体化逻辑：从手牌中自动匹配符合抽象特征的具体牌。
+*   [x] 定义 **Reward (奖励)**：
     *   赢了 +100
-    *   输了 -剩余牌数
+    *   输了 -剩余牌数 (Step 奖励 +1)
     *   打出炸弹 +20
-    *   非法出牌 -1000 (强制结束)
+    *   非法出牌 -100 (Truncated)
 
 ### 第三阶段：AI 训练 (The Brain)
-**目标**：从"随机乱打"进化到"策略高手"。
-*   [ ] **基准测试 (Baseline)**：先写一个 `RandomAgent` (随机出牌) 和 `RuleAgent` (简单规则：有小打小，有大管上)。
-*   [ ] **DQN/PPO 算法实现**：搭建神经网络（输入状态 -> 输出动作概率）。
-*   [ ] **自我对弈 (Self-Play)**：让模型自己跟自己打，或者跟历史版本的自己打，不断进化。
+**目标**：训练一个能打赢随机策略的 AI。
+*   [x] 搭建训练管线：
+    *   使用 Stable Baselines 3 (SB3) 的 PPO 算法。
+    *   实现 `SingleAgentWrapper`：将多人环境包装为单人环境，对手使用 RandomAgent。
+    *   使用 `MaskablePPO` 处理非法动作掩码。
+*   [x] 训练与评估：
+    *   在 CPU 上训练 100,000 步。
+    *   评估 100 局对抗随机对手的胜率。
+    *   **成果**：胜率达到 **64.00%** (随机基准 33%)，平均奖励 +37.30。
+*   [ ] (可选) 进阶训练：Self-Play（自我对弈），让 AI 对抗过去的自己，提升水平。
 
-### 第四阶段：API 服务化 (The Interface)
+### 第四阶段：API 服务封装 (The Service)
 **目标**：让外部程序能调用这个AI。
 *   [ ] 搭建 FastAPI 项目。
 *   [ ] 接口设计：
@@ -79,11 +94,19 @@ graph TD
     *   `GET /game/state`: 获取当前局面。
 *   [ ] 接入 AI 模型进行实时推理。
 
+### 第五阶段：测试、优化与上线 (Quality Assurance & Deployment)
+**目标**：打造一个稳定、高性能、无 Bug 的产品。
+*   [ ] **单元测试 (Unit Test)**：覆盖核心逻辑（如牌型判断、胜负判定）。
+*   [ ] **集成测试 (Integration Test)**：测试 API 接口、数据库连接、AI 模型加载。
+*   [ ] **性能测试 (Performance Test)**：模拟高并发场景，优化响应速度。
+*   [ ] **文档编写 (Documentation)**：编写 API 文档、部署文档、用户手册。
+*   [ ] **上线部署 (Deployment)**：配置服务器、域名、SSL 证书，发布上线。
+
+### 第六阶段：前端界面开发 (Frontend Development)
+**目标**：构建图形化界面，实现人机交互。
+*   [ ] **技术栈**: Vue 3 + Vite + Pinia + Axios。
+*   [ ] **资源整合**: 利用 `front/src/porerImg/` 下的 1-52.png 图片资源。
+*   [ ] **功能实现**: 游戏大厅、对战界面、出牌交互、结算计分。
+*   [ ] **联调**: 对接后端 API，实现完整游戏流程。
+
 ---
-
-## 5. 下一步建议 (Next Steps)
-
-鉴于您希望从基础做起，建议我们 **先完成第一阶段：游戏核心引擎**。
-没有完善的规则引擎，AI 训练就无从谈起。
-
-**是否立即开始编写第一阶段的“扑克牌定义”和“基础规则”代码？**
