@@ -28,11 +28,13 @@ class HandEvaluator:
         elif count == 3:
             return HandEvaluator._check_triple(cards)
         elif count == 4:
-            # 可能是炸弹 或 三带一
-            bomb = HandEvaluator._check_bomb(cards)
-            if bomb:
-                return bomb
-            return HandEvaluator._check_triple_with_single(cards)
+            # 可能是炸弹、三带一、或连对(2对)
+            play = HandEvaluator._check_bomb(cards)
+            if play: return play
+            play = HandEvaluator._check_triple_with_single(cards)
+            if play: return play
+            play = HandEvaluator._check_double_sequence(cards)
+            if play: return play
         elif count == 5:
             # 顺子 或 三带二
             play = HandEvaluator._check_straight(cards)
@@ -40,7 +42,7 @@ class HandEvaluator:
                 return play
             return HandEvaluator._check_triple_with_two(cards)
 
-        # 5张以上: 顺子, 连对, 飞机, 飞机带翅膀
+        # 6张及以上: 顺子, 连对, 飞机, 飞机带翅膀
         play = HandEvaluator._check_straight(cards)
         if play:
             return play
@@ -191,7 +193,7 @@ class HandEvaluator:
 
         # 检查对子连续性
         for i in range(len(pairs) - 1):
-            if pairs[i+1].rank - pairs[i].rank != 1:
+            if pairs[i+1] - pairs[i] != 1:
                 return None
 
         return Play(HandType.DOUBLE_SEQUENCE, cards, length=len(pairs), max_rank=pairs[-1])
