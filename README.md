@@ -45,12 +45,23 @@ pip install sb3-contrib stable-baselines3 shimmy fastapi uvicorn pydantic numpy
 
 后端提供游戏逻辑和 AI 推理接口。
 
+#### 本地运行
 ```bash
 # 在项目根目录下运行
 python -m uvicorn src.api.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+#### Docker 运行 (推荐)
+```bash
+# 构建镜像
+docker build -t poker-backend .
+
+# 运行容器
+docker run -d -p 8000:8000 --name poker-ai poker-backend
+```
+
 服务启动后，API 文档位于: `http://localhost:8000/docs`
+
 
 ### 3. 启动前端界面
 

@@ -1,0 +1,15 @@
+numpy
+pandas
+matplotlib
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
+torchaudio --index-url https://download.pytorch.org/whl/cpu
+gymnasium
+stable-baselines3
+shimmy
+sb3-contrib
+fastapi
+uvicorn
+pydantic
+tqdm
+rich
