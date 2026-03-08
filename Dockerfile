@@ -16,8 +16,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # 1. 明确安装 PyTorch CPU 版本 (这是减小体积的关键，约 200MB)
-# 如果不指定 --index-url，pip 会默认安装包含 CUDA 的 GPU 版 (2GB+)
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# 对于 x86_64 使用专门的 CPU 索引，对于 ARM64 (aarch64) 直接从 PyPI 安装
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
+        pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu; \
+    else \
+        pip install --no-cache-dir torch torchvision torchaudio; \
+    fi
 
 # 2. 复制依赖文件并安装其他库
 COPY requirements.txt .
