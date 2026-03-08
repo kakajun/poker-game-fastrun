@@ -52,6 +52,10 @@ def _convert_game_to_state(game: Game, game_id: str) -> GameStateModel:
         
     last_play = _convert_play_to_model(game.last_play) if game.last_play else None
     
+    # Get legal actions for current player
+    legal_plays = game.get_legal_actions()
+    legal_models = [_convert_play_to_model(p) for p in legal_plays]
+    
     return GameStateModel(
         game_id=game_id,
         current_player=game.current_player,
@@ -62,7 +66,8 @@ def _convert_game_to_state(game: Game, game_id: str) -> GameStateModel:
         is_over=game.is_over,
         scores=game.scores,
         cards_played_count=game.cards_played_count,
-        bomb_scores=game.bomb_scores
+        bomb_scores=game.bomb_scores,
+        legal_actions=legal_models
     )
 
 @app.post("/game/start", response_model=GameStateModel)

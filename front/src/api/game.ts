@@ -27,6 +27,7 @@ export interface GameStateModel {
   scores: number[];
   cards_played_count: number[];
   bomb_scores: number[];
+  legal_actions: PlayModel[];
 }
 
 export const gameApi = {

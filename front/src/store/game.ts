@@ -80,7 +80,6 @@ export const useGameStore = defineStore('game', {
       this.players = backendState.hands.map((hand, index) => {
         const isHuman = index === 0;
         const id = playerIds[index];
-        // Don't sort here, use backend order (descending)
         const mappedHand = hand.map(mapCard);
 
         return {
@@ -93,6 +92,21 @@ export const useGameStore = defineStore('game', {
           isTurn: index === backendState.current_player
         };
       });
+
+      // 4. Auto-pass logic
+      // If it's human turn and the only legal action is PASS, then pass automatically
+      if (!backendState.is_over && backendState.current_player === 0) {
+        const isOnlyPass = backendState.legal_actions.length === 1 &&
+                           backendState.legal_actions[0].type === 'PASS';
+
+        if (isOnlyPass) {
+          console.log("No legal moves available. Auto-passing...");
+          // Delay a bit for visual clarity
+          setTimeout(() => {
+            this.passTurn();
+          }, 1000);
+        }
+      }
     },
 
     async playCards(playerId: string, cards: Card[]) {
