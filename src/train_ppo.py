@@ -3,6 +3,9 @@ import numpy as np
 import os
 import sys
 
+# Fix for OMP: Error #15: Initializing libiomp5md.dll, but found libiomp5md.dll already initialized.
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 # Ensure root is in path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(current_dir)

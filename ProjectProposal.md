@@ -86,15 +86,18 @@ graph TD
 *   [ ] (可选) 进阶训练：Self-Play（自我对弈），让 AI 对抗过去的自己，提升水平。
 
 ### 第四阶段：API 服务封装 (The Service)
-**目标**：让外部程序能调用这个AI。
-*   [ ] 搭建 FastAPI 项目。
-*   [ ] 接口设计：
-    *   `POST /game/start`: 开始一局新游戏，返回 GameID。
-    *   `POST /game/action`: 玩家出牌。
-    *   `GET /game/state`: 获取当前局面。
-*   [ ] 接入 AI 模型进行实时推理。
+**目标**：将核心逻辑和 AI 模型封装为 HTTP API，供前端调用。
+*   [x] 技术选型：FastAPI + Uvicorn。
+*   [x] 接口定义：
+    *   `POST /game/start`: 创建新游戏，返回 Session ID。
+    *   `GET /game/{id}/state`: 获取当前游戏状态（手牌、出牌区、分数）。
+    *   `POST /game/{id}/action`: 玩家出牌接口。
+    *   `POST /game/{id}/ai`: 触发 AI 决策并执行。
+*   [x] 会话管理：实现简单的内存 SessionManager。
+*   [x] AI 集成：封装 `AIService`，加载 PPO 模型并进行推理。
+*   [x] 成果：API 服务已启动，并通过了初步测试。
 
-### 第五阶段：测试、优化与上线 (Quality Assurance & Deployment)
+### 第五阶段：测试、优化、上线 (The Polish)
 **目标**：打造一个稳定、高性能、无 Bug 的产品。
 *   [ ] **单元测试 (Unit Test)**：覆盖核心逻辑（如牌型判断、胜负判定）。
 *   [ ] **集成测试 (Integration Test)**：测试 API 接口、数据库连接、AI 模型加载。
@@ -102,11 +105,18 @@ graph TD
 *   [ ] **文档编写 (Documentation)**：编写 API 文档、部署文档、用户手册。
 *   [ ] **上线部署 (Deployment)**：配置服务器、域名、SSL 证书，发布上线。
 
-### 第六阶段：前端界面开发 (Frontend Development)
-**目标**：构建图形化界面，实现人机交互。
-*   [ ] **技术栈**: Vue 3 + Vite + Pinia + Axios。
-*   [ ] **资源整合**: 利用 `front/src/porerImg/` 下的 1-52.png 图片资源。
-*   [ ] **功能实现**: 游戏大厅、对战界面、出牌交互、结算计分。
-*   [ ] **联调**: 对接后端 API，实现完整游戏流程。
+### 第六阶段：前端界面设计 (The Face)
+**目标**：构建一个直观、响应式的 Web 界面。
+*   [x] 框架：Vue 3 + Vite + TypeScript + Tailwind CSS (或自定义 CSS)。
+*   [x] 核心组件：
+    *   `Card.vue`: 渲染单张扑克牌（支持选中状态）。
+    *   `Hand.vue`: 展示玩家手牌，支持点击选牌。
+    *   `GamePage.vue`: 游戏主界面，布局玩家位置、出牌区、控制按钮。
+*   [x] 状态管理：使用 Pinia 管理游戏状态 (`src/store/game.ts`)。
+*   [x] 前后端对接：
+    *   创建 `src/api/game.ts` 封装 Axios 请求。
+    *   重构 `src/store/game.ts`，将纯前端逻辑替换为 API 调用。
+    *   实现数据模型适配（后端 int ID -> 前端 string ID）。
+*   [ ] (可选) 动画效果：发牌动画、出牌飞入效果。
 
----
+### 总结 (Summary)
