@@ -16,27 +16,7 @@ const handlePlay = (cards: CardType[]) => {
   // Logic to validate and play cards
   if (!gameStore.humanPlayer) return;
 
-  // 1. Check if pattern is valid
-  const pattern = analyzeHand(cards);
-  if (pattern.type === HandType.Invalid) {
-    alert("Invalid card pattern!");
-    return;
-  }
-
-  // 2. Check if beats last played
-  // If no last played cards (empty) or last player was me (new round), any valid pattern is allowed
-  // Wait, if lastPlayerIndex is ME, then lastPlayedCards is CLEARED in nextTurn() usually.
-  // But let's check store state.
-  // Store: if (this.currentPlayerIndex === this.lastPlayerIndex) { this.lastPlayedCards = []; ... }
-  // So lastPlayedCards should be empty if it's my free turn.
-  
-  if (gameStore.lastPlayedCards.length > 0) {
-      if (!canBeat(cards, gameStore.lastPlayedCards)) {
-          alert("Cannot beat the last played cards!");
-          return;
-      }
-  }
-
+  // Directly call store action (Backend will validate)
   gameStore.playCards(gameStore.humanPlayer.id, cards);
 };
 
@@ -67,8 +47,8 @@ const handlePass = () => {
       <!-- Last Played Cards (Center Top/Middle) -->
       <div class="flex flex-col items-center justify-center mt-10">
          <div v-if="gameStore.lastPlayedCards.length > 0" class="flex justify-center">
-            <div 
-                v-for="(card, index) in gameStore.lastPlayedCards" 
+            <div
+                v-for="(card, index) in gameStore.lastPlayedCards"
                 :key="card.id"
                 :style="{ marginLeft: index === 0 ? '0' : '-30px', zIndex: index }"
             >
@@ -100,7 +80,7 @@ const handlePass = () => {
        <div v-if="gameStore.humanPlayer?.isTurn" class="mb-4 text-yellow-300 text-xl font-bold animate-bounce">
           Your Turn!
        </div>
-       <Hand 
+       <Hand
          v-if="gameStore.humanPlayer"
          :cards="gameStore.humanPlayer.hand"
          :isHuman="true"
@@ -117,7 +97,7 @@ const handlePass = () => {
                 {{ gameStore.winnerId === 'human' ? 'You Win!' : 'Game Over' }}
             </h2>
             <p class="text-xl mb-6">Winner: {{ gameStore.players.find(p => p.id === gameStore.winnerId)?.name }}</p>
-            <button 
+            <button
                 @click="gameStore.initGame()"
                 class="px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition"
             >

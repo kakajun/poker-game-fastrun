@@ -9,6 +9,7 @@ class HandType(Enum):
     PAIR = auto()               # 对子
     TRIPLE = auto()             # 三张 (通常不能单独出，除非最后一手)
     TRIPLE_WITH_SINGLE = auto()  # 三带一
+    TRIPLE_WITH_TWO = auto()     # 三带二
     STRAIGHT = auto()           # 顺子 (>=5)
     DOUBLE_SEQUENCE = auto()    # 连对 (>=2对, 或 >=3对? 跑得快通常 >=2对)
     # 规则: 连对 >= 3对 吗?

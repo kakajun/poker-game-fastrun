@@ -72,11 +72,21 @@ class ActionGenerator:
             # 可以是同点数的剩余牌（如果有4张）
             # 也可以是其他点数的牌
             remain_cards = [c for c in cards if c not in trip_cards]
+            
+            # 5.1 生成三带一
             for c in remain_cards:
                 play_cards = trip_cards + [c]
                 play_cards.sort()
                 actions.append(Play(HandType.TRIPLE_WITH_SINGLE,
                                play_cards, length=1, max_rank=r_trip))
+            
+            # 5.2 生成三带二
+            if len(remain_cards) >= 2:
+                for combo in combinations(remain_cards, 2):
+                    play_cards = trip_cards + list(combo)
+                    play_cards.sort()
+                    actions.append(Play(HandType.TRIPLE_WITH_TWO,
+                                   play_cards, length=1, max_rank=r_trip))
 
         # 6. 顺子 (>=5)
         # 寻找所有连续 Rank 序列
@@ -97,15 +107,15 @@ class ActionGenerator:
                             seq_ranks, rank_map, [], actions, HandType.STRAIGHT
                         )
 
-        # 7. 连对 (>=3对)
+        # 7. 连对 (>=2对)
         # 不含2
         pair_ranks = [r for r in ranks if r !=
                       Rank.TWO and len(rank_map[r]) >= 2]
-        if len(pair_ranks) >= 3:  # 跑得快通常>=2? mainRule says >=3
+        if len(pair_ranks) >= 2:
             for i in range(len(pair_ranks)):
-                for length in range(3, len(pair_ranks) - i + 1):  # Start from 3
+                for length in range(2, len(pair_ranks) - i + 1):  # Start from 2
                     seq_ranks = pair_ranks[i: i+length]
-                    if seq_ranks[-1] - seq_ranks[0] == length - 1:
+                    if seq_ranks[-1].value - seq_ranks[0].value == length - 1:
                         ActionGenerator._generate_sequences_pairs(
                             seq_ranks, rank_map, [], actions
                         )

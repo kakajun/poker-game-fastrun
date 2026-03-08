@@ -5,12 +5,12 @@ import { gameApi, type GameStateModel, type CardModel } from '../api/game';
 
 // Adapter helpers
 function mapSuit(backendSuit: number): Suit {
-  // Backend: 0: Spades, 1: Hearts, 2: Clubs, 3: Diamonds
+  // Backend: 0: Diamond, 1: Club, 2: Heart, 3: Spade
   switch (backendSuit) {
-    case 0: return Suit.Spades;
-    case 1: return Suit.Hearts;
-    case 2: return Suit.Clubs;
-    case 3: return Suit.Diamonds;
+    case 0: return Suit.Diamonds;
+    case 1: return Suit.Clubs;
+    case 2: return Suit.Hearts;
+    case 3: return Suit.Spades;
     default: return Suit.Spades;
   }
 }
@@ -48,7 +48,7 @@ export const useGameStore = defineStore('game', {
         const state = await gameApi.startGame();
         this.gameId = state.game_id;
         this.syncState(state);
-        
+
         // If first player is AI, trigger AI
         if (!this.players[this.currentPlayerIndex].isHuman) {
           this.processAiTurn();
@@ -64,7 +64,7 @@ export const useGameStore = defineStore('game', {
       this.winnerId = backendState.winner !== -1 ? (backendState.winner === 0 ? 'human' : `ai-${backendState.winner}`) : null;
       this.currentPlayerIndex = backendState.current_player;
       this.lastPlayerIndex = backendState.last_play_player; // If -1 means no one played yet?
-      
+
       // 2. Last Played Cards
       if (backendState.last_play) {
         this.lastPlayedCards = backendState.last_play.cards.map(mapCard);
@@ -76,12 +76,13 @@ export const useGameStore = defineStore('game', {
       // Map 0 -> human, 1 -> ai-1, 2 -> ai-2
       const playerIds = ['human', 'ai-1', 'ai-2'];
       const playerNames = ['You', 'Bot 1', 'Bot 2'];
-      
+
       this.players = backendState.hands.map((hand, index) => {
         const isHuman = index === 0;
         const id = playerIds[index];
-        const mappedHand = hand.map(mapCard).sort((a, b) => a.rank - b.rank);
-        
+        // Don't sort here, use backend order (descending)
+        const mappedHand = hand.map(mapCard);
+
         return {
           id,
           name: playerNames[index],
@@ -96,15 +97,15 @@ export const useGameStore = defineStore('game', {
 
     async playCards(playerId: string, cards: Card[]) {
       if (!this.gameId) return;
-      
+
       // Human action
       // Convert cards to IDs
       const cardIds = cards.map(c => parseInt(c.id));
-      
+
       try {
         const newState = await gameApi.playerAction(this.gameId, cardIds);
         this.syncState(newState);
-        
+
         // Check if next is AI
         if (!this.players[this.currentPlayerIndex].isHuman && !this.winnerId) {
           this.processAiTurn();
@@ -122,7 +123,7 @@ export const useGameStore = defineStore('game', {
       try {
         const newState = await gameApi.playerAction(this.gameId, []);
         this.syncState(newState);
-        
+
         if (!this.players[this.currentPlayerIndex].isHuman && !this.winnerId) {
           this.processAiTurn();
         }
@@ -134,13 +135,13 @@ export const useGameStore = defineStore('game', {
 
     async processAiTurn() {
       if (!this.gameId || this.winnerId) return;
-      
+
       // Delay for visual effect
       setTimeout(async () => {
         try {
           const newState = await gameApi.triggerAi(this.gameId);
           this.syncState(newState);
-          
+
           // If still AI turn (next player is AI), trigger again
           if (!this.players[this.currentPlayerIndex].isHuman && !this.winnerId) {
             this.processAiTurn();

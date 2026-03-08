@@ -99,5 +99,5 @@ class Card:
     def from_id(card_id: int) -> 'Card':
         """从全局ID还原卡牌"""
         rank = Rank(card_id // 4 + 3)
-        suit = Suit(card_id % 4)
-        return Card(rank, suit)
+        suit_val = card_id % 4
+        return Card(rank, Suit(suit_val))

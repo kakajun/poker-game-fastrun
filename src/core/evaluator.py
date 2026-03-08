@@ -15,6 +15,50 @@ class HandEvaluator:
         if not cards:
             return None
 
+        # 排序：rank 优先
+        cards.sort()
+
+        # 根据张数快速分流
+        count = len(cards)
+
+        if count == 1:
+            return HandEvaluator._check_single(cards)
+        elif count == 2:
+            return HandEvaluator._check_pair(cards)
+        elif count == 3:
+            return HandEvaluator._check_triple(cards)
+        elif count == 4:
+            # 可能是炸弹 或 三带一
+            bomb = HandEvaluator._check_bomb(cards)
+            if bomb:
+                return bomb
+            return HandEvaluator._check_triple_with_single(cards)
+        elif count == 5:
+            # 顺子 或 三带二
+            play = HandEvaluator._check_straight(cards)
+            if play:
+                return play
+            return HandEvaluator._check_triple_with_two(cards)
+
+        # 5张以上: 顺子, 连对, 飞机, 飞机带翅膀
+        play = HandEvaluator._check_straight(cards)
+        if play:
+            return play
+
+        play = HandEvaluator._check_double_sequence(cards)
+        if play:
+            return play
+
+        play = HandEvaluator._check_airplane(cards)
+        if play:
+            return play
+
+        play = HandEvaluator._check_airplane_with_wings(cards)
+        if play:
+            return play
+
+        return None
+
     @staticmethod
     def can_beat(current: Play, target: Play) -> bool:
         """
@@ -45,44 +89,6 @@ class HandEvaluator:
 
         # 同类型同张数，比大小
         return current.max_rank > target.max_rank
-
-        # 排序：rank 优先
-        cards.sort()
-
-        # 根据张数快速分流
-        count = len(cards)
-
-        if count == 1:
-            return HandEvaluator._check_single(cards)
-        elif count == 2:
-            return HandEvaluator._check_pair(cards)
-        elif count == 3:
-            return HandEvaluator._check_triple(cards)
-        elif count == 4:
-            # 可能是炸弹 或 三带一
-            bomb = HandEvaluator._check_bomb(cards)
-            if bomb:
-                return bomb
-            return HandEvaluator._check_triple_with_single(cards)
-
-        # 5张以上: 顺子, 连对, 飞机, 飞机带翅膀
-        play = HandEvaluator._check_straight(cards)
-        if play:
-            return play
-
-        play = HandEvaluator._check_double_sequence(cards)
-        if play:
-            return play
-
-        play = HandEvaluator._check_airplane(cards)
-        if play:
-            return play
-
-        play = HandEvaluator._check_airplane_with_wings(cards)
-        if play:
-            return play
-
-        return None
 
     @staticmethod
     def _check_single(cards: List[Card]) -> Play:
@@ -131,6 +137,27 @@ class HandEvaluator:
         return None
 
     @staticmethod
+    def _check_triple_with_two(cards: List[Card]) -> Optional[Play]:
+        # 3带2 (5张)
+        rank_counts = {}
+        for c in cards:
+            rank_counts[c.rank] = rank_counts.get(c.rank, 0) + 1
+
+        # 必须是两组或三组Rank (例如 333+4+5 或 333+44)
+        if not (2 <= len(rank_counts) <= 3):
+            return None
+
+        triple_rank = None
+        for r, count in rank_counts.items():
+            if count >= 3:
+                triple_rank = r
+                break
+
+        if triple_rank:
+            return Play(HandType.TRIPLE_WITH_TWO, cards, length=1, max_rank=triple_rank)
+        return None
+
+    @staticmethod
     def _check_straight(cards: List[Card]) -> Optional[Play]:
         # 顺子: >=5 张, 连续, 不能含2
         if len(cards) < 5:
@@ -150,9 +177,8 @@ class HandEvaluator:
 
     @staticmethod
     def _check_double_sequence(cards: List[Card]) -> Optional[Play]:
-        # 连对: >= 2对 (4张? 不, 规则说是3对及以上)
-        # mainRule.md: "连对: 3对及以上连续对子" -> len >= 6
-        if len(cards) < 6 or len(cards) % 2 != 0:
+        # 连对: 2对及以上连续对子 (4张, 6张, 8张...)
+        if len(cards) < 4 or len(cards) % 2 != 0:
             return None
 
         pairs = []
@@ -165,7 +191,7 @@ class HandEvaluator:
 
         # 检查对子连续性
         for i in range(len(pairs) - 1):
-            if pairs[i+1] - pairs[i] != 1:
+            if pairs[i+1].rank - pairs[i].rank != 1:
                 return None
 
         return Play(HandType.DOUBLE_SEQUENCE, cards, length=len(pairs), max_rank=pairs[-1])

@@ -34,6 +34,17 @@ class Game:
         """开始新游戏：洗牌、发牌、确定首出"""
         self.deck.shuffle()
         h1, h2, h3 = self.deck.deal()
+
+        # 排序手牌：按点数降序，同点数按花色 (黑>红>梅>方)
+        # Rank.value: 2=15 > ... > 3=3
+        # Suit.value: Spade=0, Heart=1, Club=2, Diamond=3
+        # key: (rank, -suit) -> Rank大在前，Suit小在前
+        def sort_key(c): return (c.rank.value, -c.suit.value)
+
+        h1.sort(key=sort_key, reverse=True)
+        h2.sort(key=sort_key, reverse=True)
+        h3.sort(key=sort_key, reverse=True)
+
         self.hands = [h1, h2, h3]
 
         # 寻找红桃3
@@ -211,6 +222,10 @@ class Game:
             if i != self.winner:
                 # 输家扣分 = 剩余张数
                 loss = remain_counts[i]
+
+                # 保本规则：如果只剩1张牌，不算输，不扣分
+                if loss == 1:
+                    loss = 0
 
                 # 春天 (关门) 判定
                 # 如果赢家出完，且输家一张没出 (cards_played_count[i] == 0)

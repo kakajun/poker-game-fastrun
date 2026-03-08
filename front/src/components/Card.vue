@@ -15,23 +15,26 @@ const emit = defineEmits<{
   (e: 'click'): void;
 }>();
 
-// Map card to image file index based on our assumption:
-// Suits: S, H, C, D
-// Ranks: 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A, 2
-// This matches the order in store/game.ts
+// Map card to image file index based on the specific image resources:
+// 1-4.png: Ace (Rank 14)
+// 5-8.png: 2 (Rank 15)
+// 9-12.png: 3 (Rank 3)
+// ...
+// 49-52.png: King (Rank 13)
 const imageIndex = computed(() => {
-  const suitOrder = [Suit.Spades, Suit.Hearts, Suit.Clubs, Suit.Diamonds];
-  const rankOrder = [
-    Rank.Three, Rank.Four, Rank.Five, Rank.Six, Rank.Seven,
-    Rank.Eight, Rank.Nine, Rank.Ten, Rank.Jack, Rank.Queen,
-    Rank.King, Rank.Ace, Rank.Two
-  ];
+  // 直接从后端传来的原始 ID 进行转换
+  const id = parseInt(props.card.id);
 
-  const suitIndex = suitOrder.indexOf(props.card.suit);
-  const rankIndex = rankOrder.indexOf(props.card.rank);
-  
-  // 1-based index
-  return suitIndex * 13 + rankIndex + 1;
+  if (id < 44) {
+    // Ranks 3-13: 后端 ID 0-43 -> 图片 9-52
+    return id + 9;
+  } else if (id < 48) {
+    // Rank A: 后端 ID 44-47 -> 图片 1-4
+    return (id - 44) + 1;
+  } else {
+    // Rank 2: 后端 ID 48-51 -> 图片 5-8
+    return (id - 48) + 5;
+  }
 });
 
 const imageSrc = computed(() => {
@@ -39,13 +42,6 @@ const imageSrc = computed(() => {
   return new URL(`../assets/porerImg/${imageIndex.value}.png`, import.meta.url).href;
 });
 
-const backImageSrc = computed(() => {
-    // Assuming there's a back image, or we use a color/pattern
-    // If no back image, use a placeholder or check if one of the images is a back
-    // Usually card backs are not in the 1-52 range.
-    // Let's use a CSS background for now.
-    return ''; 
-});
 
 const handleClick = () => {
   if (!props.isHidden) {
@@ -55,7 +51,7 @@ const handleClick = () => {
 </script>
 
 <template>
-  <div 
+  <div
     class="relative transition-transform duration-200 select-none"
     :class="cn(
       'cursor-pointer hover:-translate-y-2',
@@ -65,9 +61,9 @@ const handleClick = () => {
     )"
     @click="handleClick"
   >
-    <img 
+    <img
       v-if="!isHidden"
-      :src="imageSrc" 
+      :src="imageSrc"
       :alt="`${card.suit}${card.rank}`"
       class="w-full h-full object-contain drop-shadow-md"
       draggable="false"
