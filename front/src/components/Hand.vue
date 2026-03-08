@@ -82,20 +82,20 @@ const canPlay = computed(() => {
     </div>
 
     <!-- Cards Display (Standard Fan Layout) -->
-    <div class="flex justify-center items-end h-40 relative">
+    <div class="flex justify-center items-end h-62 relative">
       <div
         v-for="(card, index) in sortedCards"
         :key="card.id"
         class="transition-all duration-300"
         :style="{
-          marginLeft: index === 0 ? '0' : '-70px', // Compact overlap
+          marginLeft: index === 0 ? '0' : '-145px', // More compact overlap for larger cards
           zIndex: index
         }"
       >
         <Card
           :card="card"
           :isSelected="selectedCards.has(card.id)"
-          :isSmall="!isHuman"
+          :size="isHuman ? 'large' : 'small'"
           @click="toggleSelect(card)"
         />
       </div>

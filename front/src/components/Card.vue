@@ -7,9 +7,17 @@ import { cn } from '../lib/utils';
 const props = defineProps<{
   card: Card;
   isSelected?: boolean;
-  isSmall?: boolean;
+  size?: 'small' | 'normal' | 'large';
   isHidden?: boolean; // For opponent cards (back of card)
 }>();
+
+const sizeClasses = computed(() => {
+  switch (props.size) {
+    case 'small': return 'w-16 h-24';
+    case 'large': return 'w-44 h-64';
+    default: return 'w-24 h-36'; // normal
+  }
+});
 
 const emit = defineEmits<{
   (e: 'click'): void;
@@ -56,7 +64,7 @@ const handleClick = () => {
     :class="cn(
       'cursor-pointer hover:-translate-y-2',
       isSelected ? '-translate-y-6' : '',
-      isSmall ? 'w-16 h-24' : 'w-24 h-36', // Standard size vs small size
+      sizeClasses,
       isHidden ? 'bg-blue-800 border-2 border-white rounded-lg' : ''
     )"
     @click="handleClick"

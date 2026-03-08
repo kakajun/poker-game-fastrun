@@ -31,6 +31,7 @@ export const useGameStore = defineStore('game', {
     players: [],
     currentPlayerIndex: -1,
     lastPlayedCards: [],
+    lastPlayedCardsByPlayer: [null, null, null],
     lastPlayerIndex: null,
     deck: [],
     winnerId: null,
@@ -68,9 +69,20 @@ export const useGameStore = defineStore('game', {
 
       // 2. Last Played Cards
       if (backendState.last_play) {
-        this.lastPlayedCards = backendState.last_play.cards.map(mapCard);
+        const cards = backendState.last_play.cards.map(mapCard);
+        this.lastPlayedCards = cards;
+
+        // 更新对应玩家的出牌记录
+        if (backendState.last_play_player !== -1) {
+          // 如果是新的一轮（上家出的牌被清空，或上家就是自己），则可能需要清除其他人的显示
+          // 但后端逻辑中，如果当前玩家是自由出牌，last_play 会是 null。
+          // 这里我们简单处理：只更新最后一次出牌人的显示。
+          this.lastPlayedCardsByPlayer[backendState.last_play_player] = cards;
+        }
       } else {
         this.lastPlayedCards = [];
+        // 如果后端 last_play 为空，说明是新的一轮，清除所有人的显示
+        this.lastPlayedCardsByPlayer = [null, null, null];
       }
 
       // 3. Players

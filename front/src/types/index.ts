@@ -44,6 +44,7 @@ export interface GameState {
   players: Player[];
   currentPlayerIndex: number;
   lastPlayedCards: Card[];
+  lastPlayedCardsByPlayer: (Card[] | null)[]; // 每位玩家最后出的牌
   lastPlayerIndex: number | null; // who played the last cards
   deck: Card[];
   winnerId: string | null;
