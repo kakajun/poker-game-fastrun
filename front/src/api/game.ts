@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000'; // 这里的 URL 应该配置在 env 里
+const API_BASE_URL = '/api'; // 使用 Vite 代理前缀
 
 // 后端数据模型定义 (参考后端 src/api/models.py)
 export interface CardModel {
