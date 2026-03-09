@@ -98,40 +98,69 @@ def save_eval_image(win_rate: float, avg_reward: float, out_dir: str, n_episodes
     plt.close()
     print(f"评估结果图已保存至: {os.path.join(out_dir, 'evaluation_summary.png')}")
 
+from stable_baselines3.common.callbacks import BaseCallback
+
+class SelfPlaySaveCallback(BaseCallback):
+    """
+    定期保存模型快照，以便在 Self-Play 中使用。
+    """
+    def __init__(self, check_freq: int, save_path: str, verbose: int = 1):
+        super().__init__(verbose)
+        self.check_freq = check_freq
+        self.save_path = save_path
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.check_freq == 0:
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            path = os.path.join(self.save_path, f"ppo_poker_snapshot_{timestamp}")
+            self.model.save(path)
+            if self.verbose > 0:
+                print(f"Saved self-play snapshot to {path}")
+        return True
+
 def train():
     """主训练函数"""
-    # 1. 创建日志目录
+    # 1. 创建目录
     run_dir = os.path.join("logs", time.strftime("%Y%m%d-%H%M%S"))
     os.makedirs(run_dir, exist_ok=True)
+    os.makedirs("models", exist_ok=True)
 
     # 2. 创建环境
     env = PokerEnv()
-    env = SingleAgentWrapper(env) # 对手固定为随机智能体
+    # 启用混合对手模式，包括 30% 概率的 Self-Play
+    env = SingleAgentWrapper(env, mixed_opponents=True, self_play_prob=0.3)
 
     # 3. 添加动作掩码和监控器 Wrapper
     env = ActionMasker(env, mask_fn)
-    env = Monitor(env, run_dir) # 用于记录训练日志 (reward, length, time)
+    env = Monitor(env, run_dir)
 
     # 4. 创建 PPO 模型
     model = MaskablePPO(
         "MlpPolicy",
         env,
         verbose=1,
-        tensorboard_log=run_dir, # 指定 TensorBoard 日志目录
-        learning_rate=2e-4, # 降低学习率，提升稳定性
-        n_steps=4096, # 增加采样步数，获取更稳健的梯度
-        batch_size=128, # 增大 Batch，平衡噪音
+        tensorboard_log=run_dir,
+        learning_rate=2e-4,
+        n_steps=4096,
+        batch_size=128,
         gamma=0.99,
         gae_lambda=0.95,
-        ent_coef=0.05, # 保持高探索，防止过早收敛
-        policy_kwargs=dict(net_arch=[256, 256, 256]) # 加深加宽网络，提升表达能力
+        ent_coef=0.05,
+        policy_kwargs=dict(net_arch=[256, 256, 256])
     )
 
-    # 5. 开始训练
-    total_timesteps = 500000 # 显著增加训练步数，以适应增强后的观测空间
-    print(f"开始训练，总步数: {total_timesteps}...")
+    # 5. 设置 Callback (每 50,000 步保存一次快照用于 Self-Play)
+    snapshot_callback = SelfPlaySaveCallback(check_freq=50000, save_path="models")
 
-    model.learn(total_timesteps=total_timesteps, progress_bar=True)
+    # 6. 开始训练
+    total_timesteps = 500000
+    print(f"开始 Self-Play 训练，总步数: {total_timesteps}...")
+
+    model.learn(
+        total_timesteps=total_timesteps,
+        progress_bar=True,
+        callback=snapshot_callback
+    )
 
     # 6. 保存最终模型
     model_name = f"ppo_poker_{time.strftime('%Y%m%d-%H%M%S')}"
