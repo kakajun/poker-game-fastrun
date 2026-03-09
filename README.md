@@ -41,6 +41,11 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 pip install sb3-contrib stable-baselines3 shimmy fastapi uvicorn pydantic numpy
 ```
 
+```bash
+# 自建环境
+conda activate .\.venv
+```
+
 ### 2. 启动后端服务
 
 后端提供游戏逻辑和 AI 推理接口。
@@ -93,6 +98,32 @@ python src/train_ppo.py
 ```
 
 模型将保存到 `models/ppo_poker_final.zip`。
+
+## 📊 模型评估 (Model Evaluation)
+
+项目提供了多维度的模型评估工具，用于量化 AI 的竞技水平和策略质量。
+
+### 1. 评估维度
+- **竞技表现 (Competitive)**: 统计胜率、平均得分、春天达成率及得分分布。
+- **策略质量 (Strategy)**: 
+  - **炸弹使用效率**: 炸弹的打出频率及成功率。
+  - **关键牌控制**: 对 2、A、K 等大牌的使用时机。
+- **获胜效率 (Efficiency)**: 获胜所需的平均步数（步数越少说明牌型组合越优）。
+- **鲁棒性 (Robustness)**: 分析起手手牌强度与最终胜率的相关性。
+
+### 2. 春天挑战 (Spring Challenge)
+专门测试 AI 在绝对优势局下的压制能力。系统会为 AI 注入一组“必胜神牌”（包含红桃3首出长顺子、大连对、炸弹等），测试其是否能按照正确顺序打出“春天”（对手一张牌未出）。
+
+### 3. 运行评估
+```bash
+# 设置环境变量并运行通用评估 (对比 models 文件夹下的所有模型)
+$env:PYTHONPATH = '.'; .\.venv\python.exe src\evaluate\evaluator.py
+
+# 运行“打春天”专项能力评估
+$env:PYTHONPATH = '.'; .\.venv\python.exe src\evaluate\spring_evaluator.py
+```
+
+评估结果（CSV 报表与可视化对比图）将自动生成在 `src/evaluate/reports/` 目录下。
 
 ## 🧠 核心逻辑
 
