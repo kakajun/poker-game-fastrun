@@ -82,9 +82,12 @@ npm run dev
 
 ### 4. 训练 AI (可选)
 
-如果你想重新训练模型：
+如果你想重新训练模型，需要安装额外的训练依赖：
 
 ```bash
+# 安装训练专用依赖 (包含 tensorboard, stable-baselines3, gymnasium 等)
+pip install -r requirementsTrain.txt
+
 # 运行训练脚本 (使用 CPU 训练约需 5-10 分钟)
 python src/train_ppo.py
 ```

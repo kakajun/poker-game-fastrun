@@ -1,10 +1,5 @@
 numpy
 pandas
-matplotlib
-gymnasium
-stable-baselines3
-shimmy
-sb3-contrib
 fastapi
 uvicorn
 pydantic
