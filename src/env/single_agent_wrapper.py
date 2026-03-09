@@ -1,37 +1,52 @@
 import gymnasium as gym
 import numpy as np
+import random
 from typing import List, Optional, Tuple, Dict, Any
 from src.agent.random_agent import RandomAgent
+from src.agent.heuristic_agent import HeuristicAgent
 
 class SingleAgentWrapper(gym.Wrapper):
     """
     将 3人 PokerEnv 包装为单人训练环境。
     - 训练 Agent 固定为 Player 0。
-    - 其他 2 个位置由 opponent_agents 控制（默认为 RandomAgent）。
-    - reset() 和 step() 会自动跳过对手回合，直到轮到 Hero (Player 0) 或游戏结束。
+    - 其他 2 个位置由 opponent_agents 控制。
+    - 支持混合对手：RandomAgent 和 HeuristicAgent。
     """
     
-    def __init__(self, env: gym.Env, opponents: List = None):
+    def __init__(self, env: gym.Env, opponents: List = None, mixed_opponents: bool = True):
         super().__init__(env)
         
         # 训练对象固定为 Player 0
         self.hero_id = 0
+        self.mixed_opponents = mixed_opponents
         
-        # 初始化对手 Agent (Player 1, Player 2)
-        if opponents is None:
-            # 默认两个 RandomAgent
-            self.opponents = [
-                RandomAgent(env.action_space.n), 
-                RandomAgent(env.action_space.n)
-            ]
-        else:
+        # 初始化对手库
+        self.random_opponents = [
+            RandomAgent(env.action_space.n), 
+            RandomAgent(env.action_space.n)
+        ]
+        self.heuristic_opponents = [
+            HeuristicAgent(),
+            HeuristicAgent()
+        ]
+        
+        # 当前对局使用的对手
+        if opponents is not None:
             self.opponents = opponents
+        else:
+            self.opponents = self.random_opponents
             
-        assert len(self.opponents) == 2, "Must provide exactly 2 opponents for 3-player game"
-
         self.last_action_mask = None
         
     def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[np.ndarray, Dict]:
+        # 如果开启了混合对手，每次重置时有概率切换对手
+        if self.mixed_opponents:
+            # 50% 概率使用启发式对手，50% 随机
+            if random.random() < 0.5:
+                self.opponents = self.heuristic_opponents
+            else:
+                self.opponents = self.random_opponents
+
         # 重置环境
         obs, info = self.env.reset(seed=seed, options=options)
         
@@ -49,7 +64,6 @@ class SingleAgentWrapper(gym.Wrapper):
         返回给 Hero 的是累计奖励和下一个 Hero 观测。
         """
         # 1. Hero 执行动作
-        # 此时轮到 Hero，obs 是给 Hero 的
         obs, reward, terminated, truncated, info = self.env.step(action)
         
         total_reward = reward
@@ -59,18 +73,30 @@ class SingleAgentWrapper(gym.Wrapper):
             return obs, total_reward, terminated, truncated, info
             
         # 2. 轮到对手，自动推进
-        # 此时 obs 是给下一个玩家（对手）的
         obs, opp_reward, terminated, truncated, info = self._play_until_hero(obs, info)
         
-        # 3. 累计奖励
+        # 3. 控牌奖励判定 (夺回出牌权)
+        # 如果推进后，又回到了 Hero 的自由出牌轮 (last_play 为 None)，说明 Hero 刚才的出牌没人管得住
+        if not terminated and not truncated:
+            game = self.env.unwrapped.game
+            if game.current_player == self.hero_id and game.last_play is None:
+                total_reward += 5.0  # 夺回出牌权奖励
+        
+        # 4. 终局奖励重塑
         if terminated:
-            # 检查赢家
-            winner = self.env.unwrapped.game.winner
-            if winner != self.hero_id:
-                # Hero 输了
-                total_reward -= 100.0
-                remain = len(self.env.unwrapped.game.hands[self.hero_id])
-                total_reward -= remain
+            game = self.env.unwrapped.game
+            winner = game.winner
+            if winner == self.hero_id:
+                # 胜利奖励保持 +100 (已经在 env.step 中处理了一部分，这里可以追加或修正)
+                # 目前 env.step 在 is_over 时给执行者 +100
+                pass
+            else:
+                # 输了：降低固定惩罚，增加减损奖励
+                # 原逻辑: -100 - remain
+                # 新逻辑: -50 - (remain * 2)  # 剩的越多罚得越狠，剩 1 张罚 52，剩 15 张罚 80
+                remain = len(game.hands[self.hero_id])
+                total_reward -= 50.0
+                total_reward -= (remain * 2.0)
         
         self.last_action_mask = info.get("action_mask")
         return obs, total_reward, terminated, truncated, info

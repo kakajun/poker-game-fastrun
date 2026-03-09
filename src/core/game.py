@@ -21,6 +21,7 @@ class Game:
         # 统计
         self.cards_played_count: List[int] = [0, 0, 0]  # 每个玩家出牌次数 (用于春天判定)
         self.bomb_scores: List[int] = [0, 0, 0]  # 炸弹得分 (实时结算)
+        self.played_card_ids: set = set()  # 已出牌 ID 集合 (用于记牌)
 
         # 结果
         self.winner: int = -1
@@ -66,6 +67,7 @@ class Game:
         # 重置统计
         self.cards_played_count = [0, 0, 0]
         self.bomb_scores = [0, 0, 0]
+        self.played_card_ids = set()
         self.winner = -1
         self.is_over = False
         self.scores = [0, 0, 0]
@@ -160,6 +162,7 @@ class Game:
             if c not in current_hand:
                 raise ValueError(f"Card {c} not in hand")
             current_hand.remove(c)  # List remove is O(N) but N is small
+            self.played_card_ids.add(c.id)  # 记录已出的牌 ID
 
         self.cards_played_count[self.current_player] += 1
 

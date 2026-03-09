@@ -12,7 +12,7 @@ from src.env.obs_encoder import ObsEncoder
 class PokerEnv(gym.Env):
     """
     跑得快强化学习环境
-    Obs: [MyHand(52), OthersCount(2), LastPlay(62)] -> 116维
+    Obs: [MyHand(52), OthersCount(2), LastPlay(62), PlayedHistory(52)] -> 168维
     Action: Discrete(200+) (Type-Len-MaxRank)
     Reward: Win=+100, Lose=-Remain, Bomb=+20
     """
@@ -123,13 +123,17 @@ class PokerEnv(gym.Env):
                 # 但 Game.bomb_scores 是累计值。
                 # 可以在 Game 中增加 step_reward 返回？
                 # 或者在这里比较差异。
-                # 简单起见，假设炸弹立即 +20.
-                if concrete_play.type == HandType.BOMB:
-                    reward += 20.0
-                    
-                # 合法出牌微小奖励，鼓励出牌
+                # 合法出牌奖励，鼓励积极出牌
                 if concrete_play.type != HandType.PASS:
-                    reward += 1.0
+                    reward += 2.0
+                    
+                # 炸弹奖励
+                if concrete_play.type == HandType.BOMB:
+                    reward += 10.0  # 适当降低即时奖励，防止乱炸，由 Game 逻辑处理大分
+                
+                # 控牌奖励：如果这一手牌让对手都过牌了，下一次还是我出牌
+                # 这个逻辑在 step 后判断比较好，或者在 Wrapper 中判断
+
                     
         except ValueError as e:
             # 引擎抛错（例如管不住上家）

@@ -8,15 +8,16 @@ class ObsEncoder:
     """
     状态编码器 (Observation Encoder)
     将 GameState 转换为神经网络可输入的 numpy 数组。
-    Observation Vector (116 dim):
+    Observation Vector (168 dim):
     - [0:52]: My Hand (One-hot)
     - [52:54]: Others Card Count (Normalized / 15)
     - [54:106]: Last Play Cards (One-hot)
     - [106:116]: Last Play Type (One-hot)
+    - [116:168]: Already Played Cards (One-hot history)
     """
     
     def __init__(self):
-        self.shape = (116,)
+        self.shape = (168,)
 
     def encode(self, game: Game, player_idx: int) -> np.ndarray:
         """
@@ -57,11 +58,18 @@ class ObsEncoder:
             if 0 <= type_idx < 10:
                 last_play_type[type_idx] = 1.0
         
+        # 4. 已出牌历史 (52维 0/1)
+        played_history = np.zeros(52, dtype=np.float32)
+        for card_id in game.played_card_ids:
+            if 0 <= card_id < 52:
+                played_history[card_id] = 1.0
+        
         # Concatenate
         return np.concatenate([
             my_hand,
             others_vec,
             last_play_cards,
-            last_play_type
+            last_play_type,
+            played_history
         ])
 

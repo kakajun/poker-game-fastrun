@@ -118,23 +118,26 @@ def train():
         env,
         verbose=1,
         tensorboard_log=run_dir, # 指定 TensorBoard 日志目录
-        learning_rate=3e-4,
-        n_steps=2048,
-        batch_size=64,
+        learning_rate=2e-4, # 降低学习率，提升稳定性
+        n_steps=4096, # 增加采样步数，获取更稳健的梯度
+        batch_size=128, # 增大 Batch，平衡噪音
         gamma=0.99,
         gae_lambda=0.95,
-        ent_coef=0.01
+        ent_coef=0.05, # 保持高探索，防止过早收敛
+        policy_kwargs=dict(net_arch=[256, 256, 256]) # 加深加宽网络，提升表达能力
     )
 
     # 5. 开始训练
-    total_timesteps = 100000
+    total_timesteps = 500000 # 显著增加训练步数，以适应增强后的观测空间
     print(f"开始训练，总步数: {total_timesteps}...")
 
     model.learn(total_timesteps=total_timesteps, progress_bar=True)
 
     # 6. 保存最终模型
-    model.save("models/ppo_poker_final")
-    print("训练完成，最终模型已保存至: models/ppo_poker_final.zip")
+    model_name = f"ppo_poker_{time.strftime('%Y%m%d-%H%M%S')}"
+    model_path = os.path.join("models", model_name)
+    model.save(model_path)
+    print(f"训练完成，最终模型已保存至: {model_path}.zip")
 
     # 7. 评估并可视化
     print("\n开始生成训练和评估结果图...")
